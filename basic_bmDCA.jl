@@ -71,7 +71,7 @@ end
 function Monte_Carlo_sweep(q::Int64, L::Int64, A::Array{Int64,1}, J::Array{Float64,2}, h::Array{Float64,1})
 	n_accepted = 0
 	for l=1:L
-		i = rand(1:L)	
+		i = rand(1:L)
 		(accepted, A) = Metropolis_Hastings(q,i, A, J, h)
 		n_accepted += accepted
 	end
@@ -243,15 +243,12 @@ function gradient_ascent( lambda_h::Float64, lambda_J::Float64, reg_h::Float64, 
 end
 
 function get_statistics_BM(L::Int64, q::Int64,  n_sample::Int64,  n_weight::Int64, T_eq::Int64, J::Array{Float64, 2}, h::Array{Float64, 1})
-	@show "test1"
 	A = rand(0:(q-1), L)	
 	X_output = zeros(Int64, n_sample, L)	
 	
-	@show "test2"
 	for m=1:T_eq
 		(n_accepted, A) = Monte_Carlo_sweep(q, L, A, J, h)
 	end	
-	@show "test3"
 	for m=1:n_sample
 		for t=1:n_weight
 			(n_accepted, A) = Monte_Carlo_sweep(q, L, A, J, h)

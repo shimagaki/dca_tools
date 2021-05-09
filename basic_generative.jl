@@ -84,3 +84,15 @@ function main_artificial_coupling_field(q,L,fname_cotact, fname_out)
     end
     close(fout)
 end
+
+function write_msa(X, fname)
+    fout = open(fname, "w")
+    N,L = size(X)
+    for n in 1:N
+        for i in 1:L
+            print(fout, X[n,i], " ")
+        end
+        println(fout,"")
+    end
+    close(fout)
+end
