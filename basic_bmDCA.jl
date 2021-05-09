@@ -32,7 +32,7 @@ end
 	dE_i(i::Int64, a1::Int64, a2::Int64, A::Array{Int64, 1}, J::Array{Float64, 2}, h::Array{Float64, 1})
 	return de_i # = E_i(a_proposed) - E_i(a 
 """
-function dE_i(i::Int64, a1::Int64, a2::Int64, A::Array{Int64, 1}, J::Array{Float64, 2}, h::Array{Float64, 1})
+function dE_i(q::Int64, i::Int64, a1::Int64, a2::Int64, A::Array{Int64, 1}, J::Array{Float64, 2}, h::Array{Float64, 1})
 	de_i = 0.0
 	for j=1:L
 		if j!=i
@@ -48,12 +48,12 @@ end
 	Metropolis_Hastings(i::Int64, A::Array{Int64, 1}, J::Array{Float64, 2}, h::Array{Float64, 1})
 	return (accepted, A) 
 """
-function Metropolis_Hastings(i::Int64, A::Array{Int64, 1}, J::Array{Float64, 2}, h::Array{Float64, 1})
+function Metropolis_Hastings(q::Int64, i::Int64, A::Array{Int64, 1}, J::Array{Float64, 2}, h::Array{Float64, 1})
 	a = A[i]
 	#e_i_saved = E_i(i, a, A, J, h)
 	a_proposed = rand(vcat(0:(a-1), (a+1):(q-1))) # Note entries of X and A are defined as between 0 and 20. 
 	#e_i_proposed = E_i(i, Ai_proposed, A, J, h)	
-	dE = dE_i(i, a+1, a_proposed+1, A, J, h)
+	dE = dE_i(q, i, a+1, a_proposed+1, A, J, h)
 	w = exp(-dE)
 	accepted = 1 
 	if(w>rand())
@@ -68,11 +68,11 @@ end
 	Monte_Carlo_sweep(L::Int64, A::Array{Int64, 1}, J::Array{Float64, 2}, h::Array{Float64, 1})
 	return n_accepted
 """
-function Monte_Carlo_sweep(L::Int64, A::Array{Int64,1}, J::Array{Float64,2}, h::Array{Float64,1})
+function Monte_Carlo_sweep(q::Int64, L::Int64, A::Array{Int64,1}, J::Array{Float64,2}, h::Array{Float64,1})
 	n_accepted = 0
 	for l=1:L
 		i = rand(1:L)	
-		(accepted, A) = Metropolis_Hastings(i, A, J, h)
+		(accepted, A) = Metropolis_Hastings(q,i, A, J, h)
 		n_accepted += accepted
 	end
 	return (n_accepted,A) 
@@ -86,7 +86,7 @@ function pCDk(X::Array{Int64, 2}, k_max::Int64, M::Int64, q::Int64, L::Int64, J:
 	A = rand(0:(q-1), L)
 	for m=1:M
 		for k=1:k_max
-			(n_accepted, A) = Monte_Carlo_sweep(L, A, J, h)
+			(n_accepted, A) = Monte_Carlo_sweep(q, L, A, J, h)
 		end
 		
 		for i in 1:L
@@ -115,7 +115,7 @@ function pCDk_minibatch(X_persistent::Array{Int64, 2}, id_set::Array{Int64, 1}, 
 		m = id_set[n]	
 		A = X_persistent[m, :] 
 		for k=1:k_max
-			(n_accepted, A) = Monte_Carlo_sweep(L, A, J, h)
+			(n_accepted, A) = Monte_Carlo_sweep(q, L, A, J, h)
 		end
 		
 		for i in 1:L
@@ -143,7 +143,7 @@ function pCDk_weight(X::Array{Int64, 2}, k_max::Int64, M::Int64, W::Array{Float6
 	A = rand(0:(q-1), L)
 	for m=1:M
 		for k=1:k_max
-			(n_accepted, A) = Monte_Carlo_sweep(L, A, J, h)
+			(n_accepted, A) = Monte_Carlo_sweep(q, L, A, J, h)
 		end
 		
 		for i in 1:L
@@ -243,15 +243,18 @@ function gradient_ascent( lambda_h::Float64, lambda_J::Float64, reg_h::Float64, 
 end
 
 function get_statistics_BM(L::Int64, q::Int64,  n_sample::Int64,  n_weight::Int64, T_eq::Int64, J::Array{Float64, 2}, h::Array{Float64, 1})
+	@show "test1"
 	A = rand(0:(q-1), L)	
 	X_output = zeros(Int64, n_sample, L)	
 	
+	@show "test2"
 	for m=1:T_eq
-		(n_accepted, A) = Monte_Carlo_sweep(L, A, J, h)
+		(n_accepted, A) = Monte_Carlo_sweep(q, L, A, J, h)
 	end	
+	@show "test3"
 	for m=1:n_sample
 		for t=1:n_weight
-			(n_accepted, A) = Monte_Carlo_sweep(L, A, J, h)
+			(n_accepted, A) = Monte_Carlo_sweep(q, L, A, J, h)
 		end
 		for i=1:L
 			X_output[m,i] = A[i]	
@@ -267,13 +270,13 @@ function output_statistics(t::Int64, L::Int64, q::Int64,  n_sample::Int64, h::Ar
 	
 	A = rand(0:(q-1), L)	
 	for m=1:T_eq
-		(n_accepted, A) = Monte_Carlo_sweep(L, A, J, h)
+		(n_accepted, A) = Monte_Carlo_sweep(q, L, A, J, h)
 	end	
 	#X_output = zeros(Int64, n_sample, L)	
 	
 	for m=1:n_sample
 		for t=1:T_aut
-			(n_accepted, A) = Monte_Carlo_sweep(L, A, J, h)
+			(n_accepted, A) = Monte_Carlo_sweep(q, L, A, J, h)
 		end
 		
 		for i=1:L
@@ -291,13 +294,13 @@ function output_statistics(fname_out::String, L::Int64, q::Int64,  n_sample::Int
 	
 	A = rand(0:(q-1), L)	
 	for m=1:T_eq
-		(n_accepted, A) = Monte_Carlo_sweep(L, A, J, h)
+		(n_accepted, A) = Monte_Carlo_sweep(q, L, A, J, h)
 	end	
 	#X_output = zeros(Int64, n_sample, L)	
 	
 	for m=1:n_sample
 		for t=1:T_aut
-			(n_accepted, A) = Monte_Carlo_sweep(L, A, J, h)
+			(n_accepted, A) = Monte_Carlo_sweep(q, L, A, J, h)
 		end
 		
 		for i=1:L
