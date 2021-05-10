@@ -775,3 +775,24 @@ function J_to_Frob(q,L,mat)
     end
     return myFrob
 end
+
+# -------------- Usage ---------------#
+#fname_in = "../note/MSA_artificial_q4_PF14.txt"
+#X = readdlm(fname_in, Int64);
+#X = X + 2*ones(Int, size(X));
+#fname_out = "MSA_artificial_q4_PF14.fasta"
+#num_to_fasta(X, fname_out)
+function num_to_fasta(X, fname_out)
+    code_alpha = ["-","A","C","D","E","F","G","H","I","K","L","M","N","P","Q","R","S","T","V","W","Y"];
+    fout = open(fname_out, "w")
+    N,L = size(X);
+    for n in 1:N
+        println(fout, ">Seq-ID-", string(n))
+        for i in 1:L
+            print(fout, code_alpha[X[n,i]], " ")
+        end
+        println(fout, "")
+    end
+    close(fout)
+end
+

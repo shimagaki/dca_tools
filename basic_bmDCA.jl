@@ -194,8 +194,6 @@ function gradient_ascent_sparse( lambda_h::Float64, lambda_J::Float64, reg_h::Fl
 end
 
 
-
-
 function gradient_ascent( lambda_h::Float64, lambda_J::Float64, reg_h::Float64, reg_J::Float64,  f1_1::Array{Float64,1},  f1_2::Array{Float64,1},  f2_2::Array{Float64,2},  C_msa::Array{Float64,2}, J::Array{Float64, 2}, h::Array{Float64, 1})
 	#C1 = f2_1 - f1_1*f1_1' # C1 is only possitive.
 	
