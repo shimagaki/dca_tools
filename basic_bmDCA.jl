@@ -21,7 +21,7 @@ function E_i(i::Int64, a::Int64, A::Array{Int64, 1}, J::Array{Float64, 2}, h::Ar
 	for j=1:L
 		if j!=i
 			b = A[j]+1	
-			e_i += -J[ (i-1)*q+a , (j-1)*q+b ]
+			e_i += -J[ km(i,a,q), km(j,b,q) ]
 		end
 	end
 	e_i += -h[ (i-1)*q+a ]
@@ -37,10 +37,10 @@ function dE_i(q::Int64, i::Int64, a1::Int64, a2::Int64, A::Array{Int64, 1}, J::A
 	for j=1:L
 		if j!=i
 			b = A[j]+1	
-			de_i += -(J[ (i-1)*q+a2 , (j-1)*q+b ] - J[ (i-1)*q+a1 , (j-1)*q+b ])
+			de_i += -(J[km(i,a2, q), km(j,b, q)] - J[ km(i,a1, q), km(j,b, q) ])
 		end
 	end
-	de_i += -(h[ (i-1)*q+a2 ] - h[ (i-1)*q+a1 ])
+	de_i += -(h[ km(i,a2,q)] - h[ km(i,a1,q)])
 	return de_i 
 end
 
@@ -71,7 +71,8 @@ end
 function Monte_Carlo_sweep(q::Int64, L::Int64, A::Array{Int64,1}, J::Array{Float64,2}, h::Array{Float64,1})
 	n_accepted = 0
 	for l=1:L
-		i = rand(1:L)
+		#i = rand(1:L)
+		i = l 
 		(accepted, A) = Metropolis_Hastings(q,i, A, J, h)
 		n_accepted += accepted
 	end

@@ -2,7 +2,7 @@ function get_MSA(fname, q, L, th)
     X=readdlm(fname, Int)
     X_temp=[]
     n_id=1
-
+    @show size(X)
     for n in 1:size(X,1) 
         r=rand()
         if(r<th)
@@ -789,7 +789,7 @@ function num_to_fasta(X, fname_out)
     for n in 1:N
         println(fout, ">Seq-ID-", string(n))
         for i in 1:L
-            print(fout, code_alpha[X[n,i]], " ")
+            print(fout, code_alpha[X[n,i]])
         end
         println(fout, "")
     end

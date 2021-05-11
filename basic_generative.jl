@@ -32,7 +32,7 @@ function output_artificial_couplings(q, L, mean_v, var_v, cont_mat)
         for j in (i+1):L
             for a in 1:q
                 for b in 1:q
-                    value = mean_v*cont_mat[i,j] + var_v*rand()
+                    value = mean_v*cont_mat[i,j] + var_v*randn()
                     coupling[km(i,a,q), km(j,b,q)] = value
                     coupling[km(j,b,q), km(i,a,q)] = value
                 end
@@ -65,8 +65,8 @@ end
   
 function main_artificial_coupling_field(q,L,fname_cotact, fname_out)
     fout = open(fname_out, "w")
-    cont = read_contact(fname_contact, q, L, 1,2,4,0.1,6.0);
-    J = output_artificial_couplings(q, L, 1, 1, cont);
+    cont = read_contact(fname_cotact, q, L, 1,2,4,0.1,6.0);
+    J = output_artificial_couplings(q, L, 1, 0.3, cont);
     h = output_artificial_field(rng,q,L,[1 2 3 4],0.01);
     for i in 1:L
         for j in (i+1):L
