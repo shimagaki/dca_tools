@@ -57,16 +57,17 @@ function output_artificial_field(rng,q,L,prob,eps)
     for i in 1:L
         freq = randperm!(rng, copy(prob)) * 0.1
         for a in 1:q
-            h[km(i,a,q)] = log(freq[a] + eps)
+		h[km(i,a,q)] = log( (1-eps)*freq[a] + eps/q )
         end
     end
     return h
 end
   
 function main_artificial_coupling_field(q,L,fname_cotact, fname_out)
+ 	@show "This method use d the ad hodc probability, assume only 4 states varialavres." 
     fout = open(fname_out, "w")
     cont = read_contact(fname_cotact, q, L, 1,2,4,0.1,6.0);
-    J = output_artificial_couplings(q, L, 1, 0.3, cont);
+    J = output_artificial_couplings(q, L, 1.0, 0.3, cont);
     h = output_artificial_field(rng,q,L,[1 2 3 4],0.01);
     for i in 1:L
         for j in (i+1):L

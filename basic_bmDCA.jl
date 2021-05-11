@@ -51,7 +51,7 @@ end
 function Metropolis_Hastings(q::Int64, i::Int64, A::Array{Int64, 1}, J::Array{Float64, 2}, h::Array{Float64, 1})
 	a = A[i]
 	#e_i_saved = E_i(i, a, A, J, h)
-	a_proposed = rand(vcat(0:(a-1), (a+1):(q-1))) # Note entries of X and A are defined as between 0 and 20. 
+	a_proposed = rand(vcat(0:(a-1), (a+1):(q-1))) # Note entries of X and A are defined as between 0 and 20.
 	#e_i_proposed = E_i(i, Ai_proposed, A, J, h)	
 	dE = dE_i(q, i, a+1, a_proposed+1, A, J, h)
 	w = exp(-dE)
