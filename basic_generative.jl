@@ -31,11 +31,10 @@ function output_artificial_couplings(q, L, mean_v, var_v, cont_mat)
     for i in 1:L
         for j in (i+1):L
             for a in 1:q
-                for b in 1:q
-                    value = mean_v*cont_mat[i,j] + var_v*randn()
-                    coupling[km(i,a,q), km(j,b,q)] = value
-                    coupling[km(j,b,q), km(i,a,q)] = value
-                end
+              	#Assume nonzero entrories are only diagonal. 
+		value = mean_v*cont_mat[i,j] + var_v*randn()
+               	coupling[km(i,a,q), km(j,a,q)] = value
+               	coupling[km(j,a,q), km(i,a,q)] = value
             end
         end
     end

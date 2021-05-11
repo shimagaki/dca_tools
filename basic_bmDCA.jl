@@ -16,18 +16,21 @@ end
 	E_i(i::Int64, a::Int64, A::Array{Int64, 1}, J::Array{Float64, 2}, h::Array{Float64, 1})
 	return e_i 
 """
-function E_i(i::Int64, a::Int64, A::Array{Int64, 1}, J::Array{Float64, 2}, h::Array{Float64, 1})
-	e_i = 0.0
-	for j=1:L
-		if j!=i
-			b = A[j]+1	
-			e_i += -J[ km(i,a,q), km(j,b,q) ]
-		end
-	end
-	e_i += -h[ (i-1)*q+a ]
-	return e_i 
-end
 
+function E_i(q::Int64, L::Int, i::Int64, A::Array{Int64, 1}, J::Array{Float64, 2}, h::Array{Float64, 1})
+	e_i = 0.0
+    a = A[i]+1
+	for j in 1:(i-1)
+        b = A[j]+1	
+        e_i += -J[ km(i,a,q), km(j,b,q) ]
+	end
+	for j in (i+1):L
+        b = A[j]+1	
+        e_i += -J[ km(i,a,q), km(j,b,q) ]
+	end
+	e_i += -h[ km(i,a,q) ]
+	return e_i 
+end 
 """
 	dE_i(i::Int64, a1::Int64, a2::Int64, A::Array{Int64, 1}, J::Array{Float64, 2}, h::Array{Float64, 1})
 	return de_i # = E_i(a_proposed) - E_i(a 
@@ -48,35 +51,39 @@ end
 	Metropolis_Hastings(i::Int64, A::Array{Int64, 1}, J::Array{Float64, 2}, h::Array{Float64, 1})
 	return (accepted, A) 
 """
-function Metropolis_Hastings(q::Int64, i::Int64, A::Array{Int64, 1}, J::Array{Float64, 2}, h::Array{Float64, 1})
-	a = A[i]
-	#e_i_saved = E_i(i, a, A, J, h)
-	a_proposed = rand(vcat(0:(a-1), (a+1):(q-1))) # Note entries of X and A are defined as between 0 and 20.
-	#e_i_proposed = E_i(i, Ai_proposed, A, J, h)	
-	dE = dE_i(q, i, a+1, a_proposed+1, A, J, h)
-	w = exp(-dE)
-	accepted = 1 
-	if(w>rand())
-		A[i] = a_proposed
-	else
-		accepted = 0 
-	end	
-	return (accepted, A) 
-end
 
+function Metropolis_Hastings(E_old::Float64, q::Int64, L::Int64, i::Int64, A::Array{Int64, 1}, J::Array{Float64, 2}, h::Array{Float64, 1})
+	a = A[i]
+    a_proposed = rand(0:(q-1)) # Note entries of X and A are defined as between 0 and 20. 	
+    if(a_proposed==a)
+        a_proposed = rand(0:(q-1))
+    end
+
+    A_prop = copy(A); A_prop[i] = a_proposed
+    E_new = E_i(q, L, i, A_prop, J, h)
+    dE = E_new - E_old
+	w = exp(-dE); r = rand()    
+    
+    if(w>r)
+        return (1, A_prop, E_new) 
+    end
+    if(w<=r)
+        return(0, A, E_old)
+    end
+end
 """
 	Monte_Carlo_sweep(L::Int64, A::Array{Int64, 1}, J::Array{Float64, 2}, h::Array{Float64, 1})
 	return n_accepted
 """
-function Monte_Carlo_sweep(q::Int64, L::Int64, A::Array{Int64,1}, J::Array{Float64,2}, h::Array{Float64,1})
+
+function Monte_Carlo_sweep(E_old::Float64, q::Int64, L::Int64, A::Array{Int64,1}, J::Array{Float64,2}, h::Array{Float64,1})
 	n_accepted = 0
-	for l=1:L
-		#i = rand(1:L)
-		i = l 
-		(accepted, A) = Metropolis_Hastings(q,i, A, J, h)
+	for l = 1:1L
+        i = rand(1:L)
+		(accepted, A, E_old) = Metropolis_Hastings(E_old, q, L, i, A, J, h)
 		n_accepted += accepted
 	end
-	return (n_accepted,A) 
+	return (n_accepted, A, E_old) 
 end
 
 function pCDk(X::Array{Int64, 2}, k_max::Int64, M::Int64, q::Int64, L::Int64, J::Array{Float64, 2}, h::Array{Float64, 1}) 
@@ -85,9 +92,11 @@ function pCDk(X::Array{Int64, 2}, k_max::Int64, M::Int64, q::Int64, L::Int64, J:
 	f2 = zeros(Float64, L*q, L*q)
 	scale = 1.0/M	
 	A = rand(0:(q-1), L)
+    	E_old = E_i(q, L, 1, A, J, h)
 	for m=1:M
 		for k=1:k_max
-			(n_accepted, A) = Monte_Carlo_sweep(q, L, A, J, h)
+			#(n_accepted, A) = Monte_Carlo_sweep(q, L, A, J, h)
+			(n_accepted, A, E_old) = Monte_Carlo_sweep(E_old, q, L, A, J, h)
 		end
 		
 		for i in 1:L
@@ -112,11 +121,13 @@ function pCDk_minibatch(X_persistent::Array{Int64, 2}, id_set::Array{Int64, 1}, 
 	scale = 1.0/(n_batch)	
 	
 	A = rand(0:(q-1), L)
+    	E_old = E_i(q, L, 1, A, J, h)
 	for n=1:n_batch
 		m = id_set[n]	
 		A = X_persistent[m, :] 
 		for k=1:k_max
-			(n_accepted, A) = Monte_Carlo_sweep(q, L, A, J, h)
+			#(n_accepted, A) = Monte_Carlo_sweep(q, L, A, J, h)
+			(n_accepted, A, E_old) = Monte_Carlo_sweep(E_old, q, L, A, J, h)
 		end
 		
 		for i in 1:L
@@ -241,22 +252,27 @@ function gradient_ascent( lambda_h::Float64, lambda_J::Float64, reg_h::Float64, 
 		cc,cslope,froc) 
 end
 
+
 function get_statistics_BM(L::Int64, q::Int64,  n_sample::Int64,  n_weight::Int64, T_eq::Int64, J::Array{Float64, 2}, h::Array{Float64, 1})
 	A = rand(0:(q-1), L)	
-	X_output = zeros(Int64, n_sample, L)	
-	
+	X_output = zeros(Int64, n_sample, L)
+    E_old = E_i(q, L, 1, A, J, h)
+    E_vec = zeros(T_eq)
+    accepted_vec = zeros(T_eq)
 	for m=1:T_eq
-		(n_accepted, A) = Monte_Carlo_sweep(q, L, A, J, h)
+		(n_accepted, A, E_old) = Monte_Carlo_sweep(E_old, q, L, A, J, h)
+		E_vec[m] = E_old
+		accepted_vec[m] = n_accepted
 	end	
 	for m=1:n_sample
 		for t=1:n_weight
-			(n_accepted, A) = Monte_Carlo_sweep(q, L, A, J, h)
+			(n_accepted, A, E_old) = Monte_Carlo_sweep(E_old, q, L, A, J, h)
 		end
 		for i=1:L
 			X_output[m,i] = A[i]	
 		end
 	end
-	return X_output
+	return X_output, E_vec, accepted_vec
 end
 
 function output_statistics(t::Int64, L::Int64, q::Int64,  n_sample::Int64, h::Array{Float64, 1}, J::Array{Float64, 2})
@@ -265,14 +281,17 @@ function output_statistics(t::Int64, L::Int64, q::Int64,  n_sample::Int64, h::Ar
 	T_eq, T_aut = 1000, 30	
 	
 	A = rand(0:(q-1), L)	
+    	E_old = E_i(q, L, 1, A, J, h)
 	for m=1:T_eq
-		(n_accepted, A) = Monte_Carlo_sweep(q, L, A, J, h)
+		#(n_accepted, A) = Monte_Carlo_sweep(q, L, A, J, h)
+		(n_accepted, A, E_old) = Monte_Carlo_sweep(E_old, q, L, A, J, h)
 	end	
 	#X_output = zeros(Int64, n_sample, L)	
 	
 	for m=1:n_sample
 		for t=1:T_aut
-			(n_accepted, A) = Monte_Carlo_sweep(q, L, A, J, h)
+			#(n_accepted, A) = Monte_Carlo_sweep(q, L, A, J, h)
+			(n_accepted, A, E_old) = Monte_Carlo_sweep(E_old, q, L, A, J, h)
 		end
 		
 		for i=1:L
@@ -289,14 +308,17 @@ function output_statistics(fname_out::String, L::Int64, q::Int64,  n_sample::Int
 	T_eq, T_aut = 1000, 30	
 	
 	A = rand(0:(q-1), L)	
+    	E_old = E_i(q, L, 1, A, J, h)
 	for m=1:T_eq
-		(n_accepted, A) = Monte_Carlo_sweep(q, L, A, J, h)
+		#(n_accepted, A) = Monte_Carlo_sweep(q, L, A, J, h)
+		(n_accepted, A, E_old) = Monte_Carlo_sweep(E_old, q, L, A, J, h)
 	end	
 	#X_output = zeros(Int64, n_sample, L)	
 	
 	for m=1:n_sample
 		for t=1:T_aut
-			(n_accepted, A) = Monte_Carlo_sweep(q, L, A, J, h)
+			#(n_accepted, A) = Monte_Carlo_sweep(q, L, A, J, h)
+			(n_accepted, A, E_old) = Monte_Carlo_sweep(E_old, q, L, A, J, h)
 		end
 		
 		for i=1:L
@@ -332,4 +354,52 @@ function output_paramters(t::Int64, L::Int64, q::Int64, h::Array{Float64, 1}, J:
 end
 
 
+# Run two MCMCs q1 and q2, c :=<q1,q2>
+# <q(0),q(t^*)> ~ c
+function Test_Autocorrelations(L::Int64, q::Int64, T_eq::Int64, n_max::Int64, J::Array{Float64, 2}, h::Array{Float64, 1})
+	av_overlap = 0.0
+    @show L, q, T_eq, n_max
+    @show size(J)
+    @show size(h)
+    for n in 1:n_max
+        A1 = rand(0:(q-1), L)
+        A2 = rand(0:(q-1), L)
+        E_old = E_i(q, L, 1, A1, J, h)
+        for m=1:T_eq
+            i = rand(1:L)
+            A1_copy = copy(A1)
+            (n_accepted, A1, E_old) = Metropolis_Hastings(E_old, q, L, i, A1, J, h)
+        end        
+        E_old = E_i(q, L, 1, A2, J, h)
+        for m=1:T_eq
+            i = rand(1:L)
+            (n_accepted, A2, E_old) = Metropolis_Hastings(E_old, q, L, i, A2, J, h)
+        end        overlap = sum(kr.(A1,A2))
+        av_overlap += overlap
+    end
+    av_overlap /= n_max
+
+    A0_vec = rand(0:(q-1), (n_max, L))
+    A_vec = copy(A0_vec)
+    Auto_corr = zeros(T_eq)
+    E_old_vec = zeros(n_max)
+    for n in 1:n_max
+        E_old_vec[n] = E_i(q, L, 1, A0_vec[n,:], J, h)
+    end
+    
+    for t in 1:T_eq
+        for n in 1:n_max
+            i = rand(1:L)
+            (n_accepted, A_vec[n,:], E_old_vec[n]) = Metropolis_Hastings(E_old_vec[n], q, L, i, A_vec[n,:], J, h)
+            #@show sum(kr.(A_vec[n,:], A0_vec[n,:]))
+            Auto_corr[t] += sum(kr.(A0_vec[n,:], A_vec[n,:]))
+        end
+        Auto_corr[t] /= n_max
+    end
+    
+    Plots.plot(Auto_corr, label="overlap between <q(t)q(0)>")
+    p1 = Plots.plot!(av_overlap*ones(size(Auto_corr)), label="overlap between independent <q1q2>")
+    
+    return Auto_corr, av_overlap, p1
+end
 
