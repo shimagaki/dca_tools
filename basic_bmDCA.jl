@@ -78,7 +78,7 @@ end
 
 function Monte_Carlo_sweep(E_old::Float64, q::Int64, L::Int64, A::Array{Int64,1}, J::Array{Float64,2}, h::Array{Float64,1})
 	n_accepted = 0
-	for l = 1:1L
+	for l = 1:L
         i = rand(1:L)
 		(accepted, A, E_old) = Metropolis_Hastings(E_old, q, L, i, A, J, h)
 		n_accepted += accepted

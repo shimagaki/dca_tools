@@ -796,3 +796,15 @@ function num_to_fasta(X, fname_out)
     close(fout)
 end
 
+# ---------- Skew Normal dist. --------#
+# Ref. https://discourse.julialang.org/t/skew-normal-distribution/21549/3
+using StatsFuns
+function rand_skewnormal(alpha)
+    while true
+        z = randn()
+        u = rand()
+        if u < StatsFuns.normcdf(z*alpha)
+            return z
+        end
+    end
+end
