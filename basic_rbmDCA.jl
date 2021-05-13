@@ -731,3 +731,27 @@ function get_J_h_from_xi(q::Int64, L::Int64, P::Int64, xi::Array{Float64, 2})
 end
 
 
+function sampling_visible_i(q::Int64, L::Int64, P::Int64, i::Int64,
+			  H::Array{Float64,1}, A_original::Array{Int64,1}, 
+			  h::Array{Float64,1}, xi::Array{Float64, 2})
+	A_return = copy(A_original)
+    e_i_hidden = zeros(q)
+    for a=1:q
+        e_i_hidden[a] =  E_i_hidden(i, a, P, h, xi, H)
+    end
+    weight = exp.(-e_i_hidden)
+    w = Weights(weight)
+    A_return[i] = sample(w) - 1
+	return (A_return, A_original[i]) 
+end
+
+# Suppose the change is only site i
+function sampling_hidden_i(q::Int64, P::Int64, L::Int64, i::Int64, A_i_old::Int64, H_old::Array{Float64,1},
+			 A::Array{Int64,1}, xi::Array{Float64,2 })
+	H0 = copy(H_old)
+	for mu=1:P
+            a = A[i]+1
+            H0[mu] += (xi[mu, km(i,a,q)] - xi[mu, km(i,A_i_old+1,q)]) / L 
+	end
+	return H0 +1.0/sqrt(L) * randn(P)
+end
