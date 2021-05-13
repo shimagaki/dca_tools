@@ -19,7 +19,7 @@ end
 
 function E_i(q::Int64, L::Int, i::Int64, A::Array{Int64, 1}, J::Array{Float64, 2}, h::Array{Float64, 1})
 	e_i = 0.0
-    a = A[i]+1
+    	a = A[i]+1
 	for j in 1:(i-1)
         b = A[j]+1	
         e_i += -J[ km(i,a,q), km(j,b,q) ]

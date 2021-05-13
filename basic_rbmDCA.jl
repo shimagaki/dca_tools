@@ -731,6 +731,7 @@ function get_J_h_from_xi(q::Int64, L::Int64, P::Int64, xi::Array{Float64, 2})
 end
 
 
+# Single site update for the hidden and visible variables. 
 function sampling_visible_i(q::Int64, L::Int64, P::Int64, i::Int64,
 			  H::Array{Float64,1}, A_original::Array{Int64,1}, 
 			  h::Array{Float64,1}, xi::Array{Float64, 2})
@@ -754,4 +755,66 @@ function sampling_hidden_i(q::Int64, P::Int64, L::Int64, i::Int64, A_i_old::Int6
             H0[mu] += (xi[mu, km(i,a,q)] - xi[mu, km(i,A_i_old+1,q)]) / L 
 	end
 	return H0 +1.0/sqrt(L) * randn(P)
+end
+
+
+#--- Check Autocorrelation time: This is direct comparison between
+#---- the dynamics of the laten variable model and non-latent variable model.
+#---- since each update, a single single variable can be updated, therefore we can 
+#---- compare with the standard sweep algorithms. 
+#n_max=100; T_eq = 1000
+#@time (E_vec, overlap_vec, overlap) = Test_Autocorrelations_rbm(q, L, P, n_max, T_eq, xi, h);
+function Test_Autocorrelations_rbm(q::Int64, L::Int64, P::Int64, n_max::Int64, T_eq::Int64, xi::Array{Float64, 2}, h::Array{Float64, 1})
+	av_overlap = 0.0
+    (J_HP,h_HP) = convert_xi2J_h(xi, q, L, P)
+    h_tot = h_HP + h
+    T_eq_overlap = 50*L; # this is ad hoc
+
+    av_overlap = 0
+    for n in 1:n_max
+        A_model_1 = rand(0:(q-1), L)	
+        H_model_temp = sampling_hidden(P, L, A_model_1, xi)
+        for t in 1:T_eq_overlap
+            #H_model_temp = sampling_hidden(P, L, A_model_1, xi)
+            i = rand(1:L)
+            (A_model_1, A_i_old) = sampling_visible_i(q,L,P, i, H_model_temp, A_model_1, h, xi)
+            H_model_temp = sampling_hidden_i(q, P, L, i, A_i_old, copy(H_model_temp), A_model_1, xi)
+            #A_model_1 = sampling_visible(q,L,P, H_model_temp, h, xi)
+        end
+        A_model_2 = rand(0:(q-1), L)	
+        H_model_temp = sampling_hidden(P, L, A_model_2, xi)
+        for t in 1:T_eq_overlap
+            i = rand(1:L)
+            (A_model_2, A_i_old) = sampling_visible_i(q,L,P, i, H_model_temp, A_model_2, h, xi)
+            H_model_temp = sampling_hidden_i(q, P, L, i, A_i_old, copy(H_model_temp), A_model_2, xi)
+            #A_model_2 = sampling_visible(q,L,P, H_model_temp, h, xi)
+        end
+        overlap = sum(kr.(A_model_1,A_model_2))
+        av_overlap += overlap 
+    end
+    av_overlap /= n_max
+       
+    E_vec = zeros(T_eq)
+    overlap_vec = zeros(T_eq)
+    for n in 1:n_max
+        A_model = rand(0:(q-1), L)	
+        A_model_0 = copy(A_model)
+        H_model=zeros(P)    
+        H_model = sampling_hidden(P,L,A_model,xi)
+        for t=1:T_eq
+            i = rand(1:L)
+            (A_model, A_i_old) = sampling_visible_i(q,L,P, i, H_model, A_model, h, xi)
+            H_model = sampling_hidden_i(q, P, L, i, A_i_old, copy(H_model), A_model, xi)
+            #A_model = sampling_visible(q,L,P, H_model, h, xi)            
+            E_tot = sum([E_i(q, L, i, A_model, J_HP, h_tot) for i in 1:L])
+            E_vec[t] += E_tot
+            overlap = sum(kr.(A_model, A_model_0))
+            overlap_vec[t] += overlap
+        end 
+    end
+    E_vec = 1.0/n_max .* E_vec
+    overlap_vec = 1.0/n_max .* overlap_vec
+    Plots.plot(overlap_vec, label="<q(0)q(t)>", color="blue")
+    p1 = Plots.plot!(overlap*ones(T_eq), label="<q1q2>", color="red")
+    return E_vec, overlap_vec, av_overlap, p1
 end
