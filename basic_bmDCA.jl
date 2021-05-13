@@ -374,7 +374,8 @@ function Test_Autocorrelations(L::Int64, q::Int64, T_eq::Int64, n_max::Int64, J:
         for m=1:T_eq
             i = rand(1:L)
             (n_accepted, A2, E_old) = Metropolis_Hastings(E_old, q, L, i, A2, J, h)
-        end        overlap = sum(kr.(A1,A2))
+        end        
+	overlap = sum(kr.(A1,A2))
         av_overlap += overlap
     end
     av_overlap /= n_max

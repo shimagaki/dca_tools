@@ -2,16 +2,16 @@ function E_i_hidden(i::Int64, P::Int64, L::Int64,
 		    h::Array{Float64, 1}, xi::Array{Float64,2}, J::Array{Float64,2}, Jfiliter::Array{Int64,2},
 		    A::Array{Int64, 1}, H::Array{Float64, 1})
 	e_i = 0.0
-	a = A[i]	
+	a = A[i]+1	
 	for mu=1:P
-		e_i += - xi[(i-1)*P+mu, a+1] * H[mu]
+		e_i += - xi[(i-1)*P+mu, a] * H[mu]
 	end	
 	for j=1:L
-		b = A[j]	
-		e_i += - J[(i-1)*q+a+1, (j-1)*q + b+1] * Jfiliter[(i-1)*q+a+1, (j-1)*q + b+1]
+		b = A[j]+1	
+		e_i += - J[km(i,a,q), km(j,b,q)] * Jfiliter[km(i,a,q), km(j,b,q)]
 	end
 	
-	e_i += - h[ (i-1)*q+a+1]
+	e_i += - h[km(i,a,q)]
 	return e_i 
 end
 
@@ -23,7 +23,7 @@ function E_i_hidden(i::Int64, a::Int64, P::Int64,
 	for mu=1:P
 		e_i += - xi[(i-1)*P+mu, a] * H[mu]
 	end	
-	e_i += - h[ (i-1)*q+a ]
+	e_i += - h[km(i,a,q)]
 	return e_i 
 end
 
@@ -88,7 +88,6 @@ function sampling_visible_MH(q::Int64, L::Int64, P::Int64,
 			A[i]=a_prop
 		end
 	end
-	
 	return A
 end
 
@@ -189,8 +188,8 @@ function pCDk_rbm(q::Int64, L::Int64, P::Int64,
 			
 			for j in (i+1):L
 				b = A_model[j]+1 
-				f2[(i-1)*q+a, (j-1)*q+b] += scale
-				f2[(j-1)*q+b, (i-1)*q+a] += scale
+				f2[km(i,a,q), km(j,b,q)] += scale
+				f2[km(j,b,q), km(i,a,q)] += scale
 			end
 		end
 	end
@@ -213,8 +212,7 @@ function pCDk_rbm_minibatch(q::Int64, L::Int64, P::Int64,
 	scale = 1.0/n_batch
 	A_model = zeros(Int64, L); H_model=zeros(P); H_data=zeros(P) #These are necessary since these are local variables and otherwise you cannot use out of for scope
 	H_data_mean = zeros(P)	
-	H_model_mean = zeros(P)
-	
+	H_model_mean = zeros(P) 
 	for n=1:n_batch
 		m = id_set[n]
 		#positive-term

@@ -315,11 +315,11 @@ function convert_xi2J_h(xi,q,L,P)
                     end
                     temp = temp * scale
                     if(i!=j)
-                        J[(i-1)*q+a, (j-1)*q+b] = temp
-                        J[(j-1)*q+b, (i-1)*q+a] = temp
+                        J[km(i,a,q), km(j,b,q)] = temp
+                        J[km(j,b,q), km(i,a,q)] = temp
                     end
                     if(i==j && a==b)
-                        h[(i-1)*q+a] = temp
+                        h[km(i,a,q)] = temp
                     end
                 end
             end
@@ -798,7 +798,7 @@ end
 
 # ---------- Skew Normal dist. --------#
 # Ref. https://discourse.julialang.org/t/skew-normal-distribution/21549/3
-using StatsFuns
+#using StatsFuns
 function rand_skewnormal(alpha)
     while true
         z = randn()
