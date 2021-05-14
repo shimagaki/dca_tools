@@ -96,3 +96,53 @@ function write_msa(X, fname)
     end
     close(fout)
 end
+
+
+# n_branch = # of binary branch of MC evlutions
+function get_correlated_data(q,L,J,h,T_eq, T_aut, n_branch)
+	#---------- Equilibration ---------#
+	A = rand(0:(q-1), L); A0 = copy(A)	
+	overlap_vec = zeros(T_eq)
+	E_old = E_i(q, L, 1, A, J, h)
+	for t=1:T_eq
+	    i = rand(1:L)
+	    (n_accepted, A, E_old) = Metropolis_Hastings(E_old, q, L, i, A, J, h)
+		#(n_accepted, A) = Monte_Carlo_adaptive(L,L, A, J, h)# it is setted nMC=L
+	    overlap = sum(kr.(A0,A))
+	    overlap_vec[t] = overlap
+	end
+	#----------------------------------#
+
+	Data = zeros(Int64, 2^n_branch, L)
+	Data_old = zeros(Int64, 2^n_branch, L)
+	Data_old[1,:] = copy(A)
+
+	leaf_id = 1
+	for n in 1:n_branch
+		#global Data_old, Data	
+		leaf_id = 2^(n-1)
+		for id in 1:leaf_id		
+			#------- Sample1. ------#	
+			A = Data_old[id,:]
+			E_old = E_i(q, L, 1, A, J, h)
+			for t=1:T_aut
+			    i = rand(1:L)
+			    (n_accepted, A, E_old) = Metropolis_Hastings(E_old, q, L, i, A, J, h)
+				#(n_accepted, A) = Monte_Carlo_adaptive(L,nMC, A, J, h)
+			end		
+			Data[2*id-1,:] = copy(A)
+			
+			#------- Sample2. ------#	
+			A = Data_old[id,:]
+			E_old = E_i(q, L, 1, A, J, h)
+			for t=1:T_aut
+			    i = rand(1:L)
+			    (n_accepted, A, E_old) = Metropolis_Hastings(E_old, q, L, i, A, J, h)
+			end		
+			Data[2*id,:] = copy(A) 
+		end
+		Data_old = copy(Data)	
+	end
+	return (Data, overlap_vec)
+end
+

@@ -809,3 +809,14 @@ function rand_skewnormal(alpha)
         end
     end
 end
+
+#P is dimension 
+function get_projection(Mat, P)
+    evl, evt = eigen(Mat);
+    #Identity_mat = evt*evt'
+    #c2_recnst = evt * Diagonal(evl) * evt';
+    Project = evt[:, (end-P+1):end]';
+    return Project
+end
+
+
