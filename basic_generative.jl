@@ -63,7 +63,7 @@ function output_artificial_field(rng,q,L,prob,eps)
 end
   
 function main_artificial_coupling_field(q,L,fname_cotact, fname_out)
- 	@show "This method use d the ad hodc probability, assume only 4 states varialavres." 
+	@show "This method assumes only 4 states varialavres. Should be generalized." 
     fout = open(fname_out, "w")
     cont = read_contact(fname_cotact, q, L, 1,2,4,0.1,6.0);
     J = output_artificial_couplings(q, L, 1.0, 0.3, cont);

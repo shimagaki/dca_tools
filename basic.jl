@@ -130,3 +130,14 @@ function binary2categorical(n, x)
     vec_temp = [argmax( x[((i-1)*q+1):i*q] ) for i in 1:n]
     return vec_temp
 end
+
+function categorical2binary(X, q)
+	(N, L) = size(X)
+	X_binary = zeros(Int64, (N, q*L))
+	for n in 1:N
+	    for i in 1:L
+		X_binary[n, km(i,X[n,i]+1,q)] = 1
+	    end
+	end
+	return X_binary'
+end

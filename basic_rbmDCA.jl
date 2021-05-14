@@ -350,8 +350,53 @@ function pCDk_rbm_weight_minbatch(q::Int64, L::Int64, P::Int64,
 	return (f1, f2, psi_data, psi_model, X_after_transition) 
 end
 
-
-
+function PCD_rbm_site_update(q::Int64, L::Int64, P::Int64, 
+	      M::Int64, k_max::Int64, 
+	      h::Array{Float64, 1},xi::Array{Float64, 2},  
+	      X::Array{Int64, 2}, X_persistent::Array{Int64,2}) 
+	
+	X_after_transition = zeros(Int64, M, L)
+	f1 = zeros(Float64, L*q)
+	f2 = zeros(Float64, L*q, L*q)
+	psi_data = zeros(Float64, P, q*L)
+	psi_model = zeros(Float64, P, q*L)
+	scale = 1.0/M
+	A_model = zeros(Int64, L); H_model=zeros(P); H_data=zeros(P)
+	H_data_mean = zeros(P)	
+	H_model_mean = zeros(P)
+	for m=1:M
+		#positive-term
+		H_data = sampling_hidden(P,L, X[m,:],xi)
+		#negative-term
+		A_model = X_persistent[m,:]
+        	H_model = copy(sampling_hidden(P,L,A_model,xi))
+		for k=1:k_max
+		    for i in 1:L
+			(A_model, A_i_old) = sampling_visible_i(q,L,P,i,  H_model, A_model, h, xi)
+			H_model = sampling_hidden_i(q, P, L, i, A_i_old, copy(H_model), A_model, xi)
+		    end
+		end
+		
+		for i in 1:L
+			a = A_model[i]+1
+			f1[km(i,a,q)] += scale
+			X_after_transition[m,i] = A_model[i]	
+			for mu in 1:P
+				psi_data[mu, km(i,X[m,i]+1, q)] += H_data[mu]
+				psi_model[mu, km(i,a,q)] += H_model[mu]
+			end
+			
+			for j in (i+1):L
+				b = A_model[j]+1 
+				f2[km(i,a,q), km(j,b,q)] += scale
+				f2[km(j,b,q), km(i,a,q)] += scale
+			end
+		end
+	end
+    psi_data = psi_data * scale
+    psi_model = psi_model * scale
+	return (f1, f2, psi_data, psi_model, X_after_transition) 
+end
 
 function gradient_ascent(q::Int64, L::Int64,P::Int64,  
 			 lambda_h::Float64, lambda_xi::Float64, 
