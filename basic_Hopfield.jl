@@ -98,32 +98,27 @@ function convert_Xi_HP(Xi_p, Xi_m, P_p, P_m)
 	for m in 1:P_p
 	    for i in 1:L
 		for a in 1:q
-		    Xi_p_conv[m, km(i,a,q)] = Xi_p[km(i,m,P_p),a] 
+			Xi_p_conv[m, km(i,a,q)] = Xi_p[m, km(i,a,q)]
 		end
 	    end
 	end
 
-
 	for m in 1:P_m
 	    for i in 1:L
 		for a in 1:q
-		    Xi_m_conv[m, km(i,a,q)] = Xi_m[km(i,m,P_m),a] 
+			Xi_m_conv[m, km(i,a,q)] = Xi_m[m, km(i,a,q)] 
 		end
 	    end
 	end
 	return Xi_p_conv, Xi_m_conv
 end
 
-
 function main_HP(q::Int64, L::Int64, fname_seq::String, file_key::String, fname_fig::String, P_p::Int64, P_m::Int64, th_reading_MSA=1.1, pseudo_para=0.01)
 	#q,L = 21, 70
 	#fname_seq = "/data/shimagaki/sparse-BM-Analysis/MSA/PF00076_mgap6_compresed_Weff_eq_W.dat"; 
 	X = get_MSA(fname_seq,q, L, th_reading_MSA);
-
 	(f1_original,f2_original,c2,Frob) = basic_MSA_analysis(X, q,L);
-
 	(rank_Gamma, ll, eigenvalues, eigenvectors) = get_eigens_of_Gamma(f2_original, f1_original, q, L, pseudo_para);
-
 
 	#P_p = 400; P_m = 400
 	#pseudo_para=0.01
@@ -165,7 +160,6 @@ function main_HP_with_weight(q::Int64, L::Int64, fname_seq::String, fname_w::Str
 	(f1_original,f2_original,c2,Frob) = basic_MSA_analysis(X, q,L);
 
 	(rank_Gamma, ll, eigenvalues, eigenvectors) = get_eigens_of_Gamma(f2_original, f1_original, q, L, pseudo_para);
-
 
 	#P_p = 400; P_m = 400
 	#pseudo_para=0.01

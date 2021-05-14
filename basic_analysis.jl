@@ -37,7 +37,7 @@ function read_Xi(fname,P, L,q)
     for n in 1:n_max
         if(X[n,1]=="xi")
             i,m,a, value  = map(Int64, X[n,2]+1),  map(Int64, X[n,3]+1), map(Int64, X[n,4]+1),  map(Float64, X[n,5])
-            Xi_vec[m,(i-1)*q+a] = value
+	    Xi_vec[m,km(i,a,q)] = value
         end
     end
     return Xi_vec
@@ -279,7 +279,7 @@ end
 function read_param_in_CA(fname, q,L,P, id=6)
     param = readdlm(fname)
     (n_row,n_col) = size(param)
-    J = zeros(q*L, q*L); xi = zeros(P*L, q); h = zeros(q*L)
+    J = zeros(q*L, q*L); xi = zeros(P, q*L); h = zeros(q*L)
     for n in 1:n_row
         if(param[n,1]=="J")
             i,j,a,b,v = param[n, 2]+1, param[n, 3]+1, param[n, 4]+1, param[n, 5]+1, param[n,id]
@@ -288,7 +288,7 @@ function read_param_in_CA(fname, q,L,P, id=6)
         end
         if(param[n,1]=="xi")
             i,m,a,v = param[n, 2]+1, param[n, 3]+1, param[n, 4]+1, param[n, 5]
-            xi[(i-1)*P+m, a] = v
+	    xi[m, km(i,a,q)] = v
         end
         if(param[n,1]=="h")
             i,a,v = param[n, 2]+1, param[n, 3]+1, param[n, 4]
@@ -311,7 +311,8 @@ function convert_xi2J_h(xi,q,L,P)
                 for b in 1:q
                     temp = 0
                     for m in 1:P
-                        temp += xi[(i-1)*P+m, a] * xi[(j-1)*P+m, b]
+                        #temp += xi[(i-1)*P+m, a] * xi[(j-1)*P+m, b]
+			temp += xi[m, km(i,a,q)] * xi[m, km(j,b,q)] 
                     end
                     temp = temp * scale
                     if(i!=j)
@@ -499,7 +500,7 @@ function output_paramters_adding_couplings(fname_out::String, L::Int64, q::Int64
 	for i=1:L
 		for mu=1:P 
 			for a=1:q
-				println(fout, "xi ", i-1, " ", mu-1, " ", a-1, " ", xi[(i-1)*P+mu, a])
+				println(fout, "xi ", i-1, " ", mu-1, " ", a-1, " ", xi[mu, km(i,a,q)])
 			end
 		end
 	end

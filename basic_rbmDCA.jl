@@ -1,10 +1,11 @@
-function E_i_hidden(i::Int64, P::Int64, L::Int64,  
+function E_i_hidden(q::Int64, i::Int64, P::Int64, L::Int64,  
 		    h::Array{Float64, 1}, xi::Array{Float64,2}, J::Array{Float64,2}, Jfiliter::Array{Int64,2},
 		    A::Array{Int64, 1}, H::Array{Float64, 1})
 	e_i = 0.0
 	a = A[i]+1	
 	for mu=1:P
-		e_i += - xi[(i-1)*P+mu, a] * H[mu]
+		#e_i += - xi[(i-1)*P+mu, a] * H[mu]
+		e_i += - xi[mu, km(i,a,q)] * H[mu]
 	end	
 	for j=1:L
 		b = A[j]+1	
@@ -15,13 +16,13 @@ function E_i_hidden(i::Int64, P::Int64, L::Int64,
 	return e_i 
 end
 
-function E_i_hidden(i::Int64, a::Int64, P::Int64, 
+function E_i_hidden(q::Int64, i::Int64, a::Int64, P::Int64, 
 		    h::Array{Float64, 1}, xi::Array{Float64,2}, 
 		    H::Array{Float64, 1})
 	e_i = 0.0
 	
 	for mu=1:P
-		e_i += - xi[(i-1)*P+mu, a] * H[mu]
+		e_i += - xi[mu, km(i,a,q)] * H[mu]
 	end	
 	e_i += - h[km(i,a,q)]
 	return e_i 
@@ -33,7 +34,8 @@ function E_i_hidden_diff(i::Int64, a_old::Int64, a_prop::Int64, P::Int64, L::Int
 		    A::Array{Int64, 1}, H::Array{Float64, 1})
 	e_i = 0.0
 	for mu=1:P
-		e_i += - (xi[(i-1)*P+mu, a_prop+1] - xi[(i-1)*P+mu, a_old+1]) * H[mu]
+		#e_i += - (xi[(i-1)*P+mu, a_prop+1] - xi[(i-1)*P+mu, a_old+1]) * H[mu]
+		e_i += - (xi[mu, km(i,a_prop+1,q)] - xi[mu, km(i,a_old+1, q)]) * H[mu]
 	end	
 	for j=1:L
 		if(j!=i)	
@@ -51,7 +53,7 @@ function E_i_hidden_diff(i::Int64, a_old::Int64, a_prop::Int64, P::Int64, L::Int
 		    A::Array{Int64, 1}, H::Array{Float64, 1})
 	e_i = 0.0
 	for mu=1:P
-		e_i += - (xi[(i-1)*P+mu, a_prop+1] - xi[(i-1)*P+mu, a_old+1]) * H[mu]
+		e_i += - (xi[mu, km(i,a_propm+1,q)] - xi[mu, km(i,a_old+1, q)]) * H[mu]
 	end	
 	e_i += - (h[(i-1)*q+a_prop+1] - h[(i-1)*q+a_old+1]) 
 	return e_i 
@@ -64,7 +66,7 @@ function sampling_visible(q::Int64, L::Int64, P::Int64,
 	for i=1:L
 		e_i_hidden = zeros(q)
 		for a=1:q
-			e_i_hidden[a] =  E_i_hidden(i, a, P, h, xi, H)
+			e_i_hidden[a] =  E_i_hidden(q, i, a, P, h, xi, H)
 		end
 		weight = exp.(-e_i_hidden)
 		w = Weights(weight)
@@ -96,7 +98,7 @@ function sampling_hidden(P::Int64, L::Int64,
 	H0 = zeros(P)
 	for mu=1:P
 		for i=1:L
-			H0[mu] += xi[(i-1)*P+mu, A[i]+1] / L
+			H0[mu] += xi[mu, km(i,A[i]+1, q)] / L
 		end
 	end
 	#H0 = ones(P)	
@@ -112,8 +114,8 @@ function pCDk_rbm_bm(q::Int64, L::Int64, P::Int64,
 	X_after_transition = zeros(Int64, M, L)
 	f1 = zeros(Float64, L*q)
 	f2 = zeros(Float64, L*q, L*q)
-	psi_data = zeros(Float64, P*L, q)
-	psi_model = zeros(Float64, P*L, q)
+	psi_data = zeros(Float64, P, q*L)
+	psi_model = zeros(Float64, P, q*L)
 	scale = 1.0/M
 	A_model = zeros(Int64, L); H_model=zeros(P); H_data=zeros(P) #These are necessary since these are local variables and otherwise you cannot use out of for scope
 	H_data_mean = zeros(P)	
@@ -135,8 +137,8 @@ function pCDk_rbm_bm(q::Int64, L::Int64, P::Int64,
 			f1[(i-1)*q+a] += scale
 			X_after_transition[m,i] = A_model[i]	
 			for mu in 1:P
-				psi_data[(i-1)*P+mu, X[m,i]+1] += H_data[mu] * scale
-				psi_model[(i-1)*P+mu, a] += H_model[mu] * scale
+				psi_data[mu, km(i,X[m,i]+1,q)] += H_data[mu] * scale
+				psi_model[mu, km(i,a,q)] += H_model[mu] * scale
 			end
 			
 			for j in (i+1):L
@@ -159,8 +161,8 @@ function pCDk_rbm(q::Int64, L::Int64, P::Int64,
 	X_after_transition = zeros(Int64, M, L)
 	f1 = zeros(Float64, L*q)
 	f2 = zeros(Float64, L*q, L*q)
-	psi_data = zeros(Float64, P*L, q)
-	psi_model = zeros(Float64, P*L, q)
+	psi_data = zeros(Float64, P, q*L)
+	psi_model = zeros(Float64, P, q*L)
 	scale = 1.0/M
 	A_model = zeros(Int64, L); H_model=zeros(P); H_data=zeros(P) #These are necessary since these are local variables and otherwise you cannot use out of for scope
 	H_data_mean = zeros(P)	
@@ -182,8 +184,8 @@ function pCDk_rbm(q::Int64, L::Int64, P::Int64,
 			f1[(i-1)*q+a] += scale
 			X_after_transition[m,i] = A_model[i]	
 			for mu in 1:P
-				psi_data[(i-1)*P+mu, X[m,i]+1] += H_data[mu] * scale
-				psi_model[(i-1)*P+mu, a] += H_model[mu] * scale
+				psi_data[mu, km(i,X[m,i]+1, q)] += H_data[mu] * scale
+				psi_model[mu, km(i,a,q)] += H_model[mu] * scale
 			end
 			
 			for j in (i+1):L
@@ -206,8 +208,8 @@ function pCDk_rbm_minibatch(q::Int64, L::Int64, P::Int64,
 	X_after_transition = copy(X_persistent) #It should use the X_persistent?  
 	f1 = zeros(Float64, L*q)
 	f2 = zeros(Float64, L*q, L*q)
-	psi_data = zeros(Float64, P*L, q)
-	psi_model = zeros(Float64, P*L, q)
+	psi_data = zeros(Float64, P, q*L)
+	psi_model = zeros(Float64, P, q*L)
 	n_batch = size(id_set, 1)	
 	scale = 1.0/n_batch
 	A_model = zeros(Int64, L); H_model=zeros(P); H_data=zeros(P) #These are necessary since these are local variables and otherwise you cannot use out of for scope
@@ -231,8 +233,8 @@ function pCDk_rbm_minibatch(q::Int64, L::Int64, P::Int64,
 			f1[(i-1)*q+a] += scale
 			X_after_transition[m,i] = A_model[i]	
 			for mu in 1:P
-				psi_data[(i-1)*P+mu, X[m,i]+1] += H_data[mu] * scale
-				psi_model[(i-1)*P+mu, a] += H_model[mu] * scale
+				psi_data[mu, km(i, X[m,i]+1, q)] += H_data[mu] * scale
+				psi_model[mu, km(i, a, q)] += H_model[mu] * scale
 			end
 			
 			for j in (i+1):L
@@ -255,8 +257,8 @@ function pCDk_rbm_weight(q::Int64, L::Int64, P::Int64,
 	X_after_transition = zeros(Int64, M, L)
 	f1 = zeros(Float64, L*q)
 	f2 = zeros(Float64, L*q, L*q)
-	psi_data = zeros(Float64, P*L, q)
-	psi_model = zeros(Float64, P*L, q)
+	psi_data = zeros(Float64, P, q*L)
+	psi_model = zeros(Float64, P, q*L)
 	
 	M_eff=sum(w)
 	scale = 1.0/Meff
@@ -281,14 +283,14 @@ function pCDk_rbm_weight(q::Int64, L::Int64, P::Int64,
 			f1[(i-1)*q+a] += scale
 			X_after_transition[m,i] = A_model[i]	
 			for mu in 1:P
-				psi_data[(i-1)*P+mu, X[m,i]+1] += H_data[mu] * w[m] * scale
-				psi_model[(i-1)*P+mu, a] += H_model[mu] * w[m] * scale
+				psi_data[mu, km(i,X[m,i]+1,q)] += H_data[mu] * w[m] * scale
+				psi_model[mu, km(i,a,q)] += H_model[mu] * w[m] * scale
 			end
 			
 			for j in (i+1):L
 				b = A_model[j]+1 
-				f2[(i-1)*q+a, (j-1)*q+b] +=  w[m] * scale
-				f2[(j-1)*q+b, (i-1)*q+a] +=  w[m] * scale
+				f2[km(i,a,q), km(j,b,q)] +=  w[m] * scale
+				f2[km(j,b,q), km(i,a,q)] +=  w[m] * scale
 			end
 		end
 	end
@@ -305,8 +307,8 @@ function pCDk_rbm_weight_minbatch(q::Int64, L::Int64, P::Int64,
 	X_after_transition = copy(X) 
 	f1 = zeros(Float64, L*q)
 	f2 = zeros(Float64, L*q, L*q)
-	psi_data = zeros(Float64, P*L, q)
-	psi_model = zeros(Float64, P*L, q)
+	psi_data = zeros(Float64, P, q*L)
+	psi_model = zeros(Float64, P, q*L)
 	
 	M_eff=sum(w)
 	
@@ -334,8 +336,8 @@ function pCDk_rbm_weight_minbatch(q::Int64, L::Int64, P::Int64,
 			f1[(i-1)*q+a] += scale
 			X_after_transition[m,i] = A_model[i]	
 			for mu in 1:P
-				psi_data[(i-1)*P+mu, X[m,i]+1] += H_data[mu] * w[m] * scale
-				psi_model[(i-1)*P+mu, a] += H_model[mu] * w[m] * scale
+				psi_data[mu, km(i,X[m,i]+1,q)] += H_data[mu] * w[m] * scale
+				psi_model[mu, km(i,a,q)] += H_model[mu] * w[m] * scale
 			end
 			
 			for j in (i+1):L
@@ -553,7 +555,7 @@ function output_paramters(t::Int64, L::Int64, q::Int64,  h::Array{Float64,1},  f
 	for i=1:L
 		for mu=1:P 
 			for a=1:q
-				println(fout, "xi ", i-1, " ", mu-1, " ", a-1, " ", xi[(i-1)*P+mu, a], " ", psi_data[(i-1)*P+mu, a], " ", psi_model[(i-1)*P+mu, a])
+				println(fout, "xi ", i-1, " ", mu-1, " ", a-1, " ", xi[mu, km(i,a,q)], " ", psi_data[mu, km(i,a,q)], " ", psi_model[mu, km(i,a,q)])
 			end
 		end
 	end
@@ -713,7 +715,7 @@ function get_J_h_from_xi(q::Int64, L::Int64, P::Int64, xi::Array{Float64, 2})
 				for b in 1:q
 					temp = 0.0
 					for m in 1:P	
-						temp += xi[(i-1)*P+m,a] * xi[(j-1)*P+m,b]
+						temp += xi[m, km(i,a,q)] * xi[m, km(j,b,q)]
 					end
 					temp = temp * scale
 					if(i!=j)	
@@ -738,7 +740,7 @@ function sampling_visible_i(q::Int64, L::Int64, P::Int64, i::Int64,
 	A_return = copy(A_original)
     e_i_hidden = zeros(q)
     for a=1:q
-        e_i_hidden[a] =  E_i_hidden(i, a, P, h, xi, H)
+        e_i_hidden[a] =  E_i_hidden(q, i, a, P, h, xi, H)
     end
     weight = exp.(-e_i_hidden)
     w = Weights(weight)
@@ -752,7 +754,8 @@ function sampling_hidden_i(q::Int64, P::Int64, L::Int64, i::Int64, A_i_old::Int6
 	H0 = copy(H_old)
 	for mu=1:P
             a = A[i]+1
-            H0[mu] += (xi[mu, km(i,a,q)] - xi[mu, km(i,A_i_old+1,q)]) / L 
+            b = A_i_old+1
+	    H0[mu] += (xi[mu, km(i,a,q)] - xi[mu, km(i,b,q)]) / L 
 	end
 	return H0 +1.0/sqrt(L) * randn(P)
 end
@@ -805,7 +808,6 @@ function Test_Autocorrelations_rbm(q::Int64, L::Int64, P::Int64, n_max::Int64, T
             i = rand(1:L)
             (A_model, A_i_old) = sampling_visible_i(q,L,P, i, H_model, A_model, h, xi)
             H_model = sampling_hidden_i(q, P, L, i, A_i_old, copy(H_model), A_model, xi)
-            #A_model = sampling_visible(q,L,P, H_model, h, xi)            
             E_tot = sum([E_i(q, L, i, A_model, J_HP, h_tot) for i in 1:L])
             E_vec[t] += E_tot
             overlap = sum(kr.(A_model, A_model_0))
@@ -816,5 +818,5 @@ function Test_Autocorrelations_rbm(q::Int64, L::Int64, P::Int64, n_max::Int64, T
     overlap_vec = 1.0/n_max .* overlap_vec
     Plots.plot(overlap_vec, label="<q(0)q(t)>", color="blue")
     p1 = Plots.plot!(overlap*ones(T_eq), label="<q1q2>", color="red")
-    return E_vec, overlap_vec, av_overlap, p1
+    return (E_vec, overlap_vec, av_overlap, p1) 
 end
